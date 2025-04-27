@@ -270,8 +270,6 @@ with tab3:
         # Criando o mapa utilizando o Folium
         map = folium.Map(location=[ -22.44, -45.40], zoom_start=11)
 
-        folium.GeoJson(lim_itajuba_geojson, name="Contorno do Município", style_function=lambda x: {'color': 'black', 'weight': 2, 'fillOpacity': 0}).add_to(map)
-
         folium.TileLayer(
             tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             attr='Esri',
