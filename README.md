@@ -20,7 +20,7 @@
 
   <p>
 <div align="center">
-    <a href="https://appqueimadas.streamlit.app/" target="_blank">
+    <a href="https://app-queimadas.streamlit.app/" target="_blank">
       <strong>🔥 Visite o App</strong>
     </a>
 </div>
@@ -29,7 +29,7 @@
 <br>
 
 <div align="center">
-  <a href="https://appqueimadas.streamlit.app/">
+  <a href="https://github.com/geovanecarlos/app_queimadas_v2">
     <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Streamlit Badge"/>
   </a>
 </div>
@@ -37,7 +37,7 @@
 <hr>
 
 <div align="center">
-  <img src="https://github.com/geovanecarlos/app_queimadas/blob/main/dataset/fig_mapa.png?raw=true" 
+  <img src="https://github.com/geovanecarlos/app_queimadas_v2/blob/main/dataset/fig_mapa.png?raw=true" 
        alt="Mapa de Focos de Queimadas"/>
 </div>
 
@@ -47,7 +47,7 @@
 1. Clone o repositório:
 
 ```
-git clone https://github.com/geovanecarlos/app_queimadas.git
+git clone https://github.com/geovanecarlos/app_queimadas_v2.git
 ```
 
 2. Instale as dependências:
