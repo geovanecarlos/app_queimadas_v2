@@ -59,7 +59,7 @@ pip install -r requirements.txt
 3. Entre na pasta `app_queimadas_v2`:
 
 ```
-cd APP_QUEIMADAS_v2/
+cd app_queimadas_v2/
 ```
 
 3. Rode o app:
