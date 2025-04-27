@@ -125,7 +125,7 @@ with tab1:
             1. Acumulado anual e total de focos de queimadas por bairro.
             2. Distribuição mensal de focos de queimadas por bairro.
             3. Acumulado mensal e total de focos de queimadas em Itajubá.
-            4. Distribuição espacial anual e total de focos de queimadas em Itajubá.
+            4. Distribuição espacial total dos focos de queimadas em Itajubá.
                         """)
             st.markdown(horizontal_bar, True)
                         
