@@ -268,7 +268,7 @@ with tab3:
         # Convertendo o contorno do município para o formato GeoJSON
         lim_itajuba_geojson = lim_itajuba.__geo_interface__
         # Criando o mapa utilizando o Folium
-        map = folium.Map(location=[ -22.44, -45.40], zoom_start=11)
+        map = folium.Map(location=[ -22.44, -45.40], zoom_start=11.5)
 
         folium.TileLayer(
             tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -291,7 +291,12 @@ with tab3:
         marker_group = folium.FeatureGroup(name="Focos de Queimadas")
 
         for idx, row in df_2019_2022.iterrows():
-             popup_text = f"Endereço: {row['Endereço']}<br>Data: {row.get('Data', 'Sem Data')}"
+             popup_text = f"""
+             Endereço: {row['Endereço']}<br>
+             Data: {row.get('Data', 'Sem Data')}<br>  
+             {row['latitude'], row['lonitude']}        
+            """
+             
              folium.Marker(
                 location=[row['latitude'], row['longitude']],
                 popup=folium.Popup(popup_text, max_width=300),
