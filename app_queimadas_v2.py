@@ -294,7 +294,8 @@ with tab3:
              popup_text = f"""
              Endereço: {row['Endereço']}<br>
              Data: {row.get('Data', 'Sem Data')}<br>  
-             {row['latitude'], row['longitude']}        
+             lat: {row['latitude']}<br>
+             lon: {row['longitude']}        
             """
              
              folium.Marker(
