@@ -6,7 +6,7 @@ import geopandas as gpd
 import plotly.express as px
 import plotly.graph_objects as go
 import folium
-from folium.plugins import HeatMap
+from folium.plugins import HeatMap, Fullscreen
 from folium.features import FeatureGroup
 
 # Configuração do Layout do APP
@@ -309,6 +309,9 @@ with tab3:
 
         # Adicionando o Layer Control
         folium.LayerControl(position="topright").add_to(map)
+        
+        # Adicionando a opção de tela cheia
+        Fullscreen().add_to(map)
 
         # Exibindo o mapa no Streamlit
         st.subheader("Mapa de Calor dos Focos de Queimadas em Itajubá/MG - 2019-2022")
