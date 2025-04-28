@@ -268,7 +268,7 @@ with tab3:
         # Convertendo o contorno do município para o formato GeoJSON
         lim_itajuba_geojson = lim_itajuba.__geo_interface__
         # Criando o mapa utilizando o Folium
-        map = folium.Map(location=[ -22.44, -45.40], zoom_start=11.5)
+        map = folium.Map(location=[ -22.44, -45.40], zoom_start=11.0)
 
         folium.TileLayer(
             tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
