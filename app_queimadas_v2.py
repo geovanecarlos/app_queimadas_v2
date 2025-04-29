@@ -281,7 +281,7 @@ with tab3:
             control=True
         ).add_to(map)
 
-                # Adicionando marcadores
+        # Adicionando marcadores
         marker_group = folium.FeatureGroup(name="Focos de Queimadas")
 
         for idx, row in df_2019_2022.iterrows():
@@ -301,6 +301,9 @@ with tab3:
         # Adicionando o grupo de marcadores no mapa
         marker_group.add_to(map)
 
+        # Adicionando o Layer Control
+        folium.LayerControl(position="topright").add_to(map)
+
         lim_itajuba_geojson = lim_itajuba.__geo_interface__
         folium.GeoJson(lim_itajuba_geojson, name="Limites de Itajubá/MG", style_function=lambda x: {'color': 'black', 'weight': 2, 'fillOpacity': 0}).add_to(map)
 
@@ -309,9 +312,6 @@ with tab3:
 
         # Adicionando o HeatMap no mapa
         HeatMap(heat_data, radius=10, name="Mapa de Calor", blur=10).add_to(map)
-
-        # Adicionando o Layer Control
-        folium.LayerControl(position="topright").add_to(map)
 
         # Exibindo o mapa no Streamlit
         st.subheader("Mapa de Calor dos Focos de Queimadas em Itajubá/MG - 2019-2022")
