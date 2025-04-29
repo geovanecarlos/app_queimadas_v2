@@ -20,7 +20,7 @@
 
   <p>
 <div align="center">
-    <a href="https://appqueimadas.streamlit.app/" target="_blank">
+    <a href="https://app-queimadas.streamlit.app/" target="_blank">
       <strong>🔥 Visite o App</strong>
     </a>
 </div>
@@ -29,7 +29,7 @@
 <br>
 
 <div align="center">
-  <a href="https://appqueimadas.streamlit.app/">
+  <a href="https://app-queimadas.streamlit.app/">
     <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Streamlit Badge"/>
   </a>
 </div>
