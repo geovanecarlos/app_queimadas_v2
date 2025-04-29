@@ -292,10 +292,10 @@ with tab3:
 
         for idx, row in df_2019_2022.iterrows():
              popup_text = f"""
-             </b>Endereço:</b> {row['Endereço']}<br>
-             </b>Datta:</b> {row.get('Data', 'Sem Data')}<br>  
-             </b>lat:</b> {row['latitude']}<br>
-             </b>lon:</b> {row['longitude']}        
+             <b>Endereço:</b> {row['Endereço']}<br>
+             <b>Datta:</b> {row.get('Data', 'Sem Data')}<br>  
+             <b>lat:</b> {row['latitude']}<br>
+             <b>lon:</b> {row['longitude']}        
             """
              
              folium.Marker(
