@@ -279,7 +279,15 @@ with tab3:
         # Adicionando o HeatMap no mapa
         HeatMap(heat_data, radius=10, name="Mapa de Calor", blur=10).add_to(map)
 
-        # # Adicionando marcadores
+        folium.TileLayer(
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri',
+            name='Esri Satellite',
+            overlay=False,
+            control=True
+        ).add_to(map)
+
+        # Adicionando marcadores
         # marker_group = folium.FeatureGroup(name="Focos de Queimadas")
 
         # for idx, row in df_2019_2022.iterrows():
@@ -298,14 +306,6 @@ with tab3:
 
         # # Adicionando o grupo de marcadores no mapa
         # marker_group.add_to(map)
-
-        folium.TileLayer(
-            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            attr='Esri',
-            name='Esri Satellite',
-            overlay=False,
-            control=True
-        ).add_to(map)
 
         # Adicionando o Layer Control
         folium.LayerControl(position="topright").add_to(map)
