@@ -291,21 +291,22 @@ with tab3:
         marker_group = folium.FeatureGroup(name="Focos de Queimadas")
 
         for idx, row in df_2019_2022.iterrows():
-             popup_text = f"""
-             <b>Endereço:</b> {row['Endereço']}<br>
-             <b>Datta:</b> {row.get('Data', 'Sem Data')}<br>  
-             <b>lat:</b> {row['latitude']}<br>
-             <b>lon:</b> {row['longitude']}        
+            popup_text = f"""
+            <b>Endereço:</b> {row['Endereço']}<br>
+            <b>Data:</b> {row.get('Data', 'Sem Data')}<br>   
+            <b>lat:</b> {row['latitude']}<br>
+            <b>lon:</b> {row['longitude']}        
             """
-             
-             folium.Marker(
+            
+            folium.Marker(
                 location=[row['latitude'], row['longitude']],
                 popup=folium.Popup(popup_text, max_width=300),
                 icon=folium.Icon(color="red", icon="fire", icon_color="white")
             ).add_to(marker_group)
 
-        # # Adicionando o grupo de marcadores no mapa
+        # Adicionando o grupo de marcadores no mapa
         marker_group.add_to(map)
+
 
         # Adicionando o Layer Control
         folium.LayerControl(position="topright").add_to(map)
