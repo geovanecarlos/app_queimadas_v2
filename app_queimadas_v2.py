@@ -270,6 +270,9 @@ with tab3:
         # Criando o mapa utilizando o Folium
         map = folium.Map(location=[ -22.44, -45.40], zoom_start=11.0)
 
+        # Adicionando a opção de tela cheia
+        Fullscreen().add_to(map)
+        
         folium.TileLayer(
             tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             attr='Esri',
@@ -310,9 +313,6 @@ with tab3:
 
         # Adicionando o Layer Control
         folium.LayerControl(position="topright").add_to(map)
-        
-        # Adicionando a opção de tela cheia
-        Fullscreen().add_to(map)
 
         # Exibindo o mapa no Streamlit
         st.subheader("Mapa de Calor dos Focos de Queimadas em Itajubá/MG - 2019-2022")
