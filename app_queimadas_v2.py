@@ -266,12 +266,17 @@ with tab3:
     # Plotagem do MAPA
     def plot_mapa():
 
-        # Convertendo o contorno do município para o formato GeoJSON
-        lim_itajuba_geojson = lim_itajuba.__geo_interface__
-
         # Criando o mapa utilizando o Folium
         map = folium.Map(location=[ -22.44, -45.40], zoom_start=11.0)
 
+        # Adicionando a opção de tela cheia
+        Fullscreen().add_to(map)
+
+        # Adicionando o Layer Control
+        folium.LayerControl(position="topright").add_to(map)
+
+        # Convertendo o contorno do município para o formato GeoJSON
+        lim_itajuba_geojson = lim_itajuba.__geo_interface__
         folium.GeoJson(lim_itajuba_geojson, name="Limites de Itajubá/MG", style_function=lambda x: {'color': 'black', 'weight': 2, 'fillOpacity': 0}).add_to(map)
 
         folium.TileLayer(
@@ -301,12 +306,6 @@ with tab3:
 
         # Adicionando o grupo de marcadores no mapa
         marker_group.add_to(map)
-
-        # Adicionando a opção de tela cheia
-        Fullscreen().add_to(map)
-        
-        # Adicionando o Layer Control
-        folium.LayerControl(position="topright").add_to(map)
 
         # Criando o HeatMap para plotagem
         heat_data = df_2019_2022[['latitude', 'longitude']].values.tolist()
