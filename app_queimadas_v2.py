@@ -265,12 +265,13 @@ with tab2:
 with tab3:
     # Plotagem do MAPA
     def plot_mapa():
-        # Convertendo o contorno do município para o formato GeoJSON
-        lim_itajuba_geojson = lim_itajuba.__geo_interface__
-        folium.GeoJson(lim_itajuba_geojson, name="Limites de Itajubá/MG", style_function=lambda x: {'color': 'black', 'weight': 2, 'fillOpacity': 0}).add_to(map)
        
         # Criando o mapa utilizando o Folium
         map = folium.Map(location=[ -22.44, -45.40], zoom_start=11.0)
+
+        # Convertendo o contorno do município para o formato GeoJSON
+        lim_itajuba_geojson = lim_itajuba.__geo_interface__
+        folium.GeoJson(lim_itajuba_geojson, name="Limites de Itajubá/MG", style_function=lambda x: {'color': 'black', 'weight': 2, 'fillOpacity': 0}).add_to(map)
 
         folium.TileLayer(
             tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
