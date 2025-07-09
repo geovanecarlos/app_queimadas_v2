@@ -331,7 +331,7 @@ with st.sidebar:
         <style>
         .custom-text {
             color: #ffffff;
-            font-size: 14px;
+            font-size: 16px;
         }
         </style>
         """,
