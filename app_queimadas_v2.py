@@ -1,5 +1,7 @@
 import streamlit as st
 from streamlit_folium import folium_static
+import streamlit_option_menu
+from streamlit_option_menu import option_menu
 from st_social_media_links import SocialMediaIcons
 import pandas as pd
 import geopandas as gpd
@@ -17,47 +19,27 @@ def layouts():
     layout="wide",
     initial_sidebar_state="expanded"
 )
-    
 if __name__ == "__main__":
     layouts()
 
-# Carregando os dados
-@st.cache_data
 def load_data():
-    anos = ['19', '20', '21', '22'] # Adicionando a coluna total dos focos
-    df_2019_2022 = pd.read_excel('dataset/QUEIMADAS_2019_2022_LOCAL.xlsx')
+    anos = ['19', '20', '21', '22', '23', '24']
+    df_queimadas = pd.read_excel('dataset/QUEIMADAS_2019_2024_TOTAL.xlsx')
     lim_itajuba = gpd.read_file("dataset/itajuba.shp")
-    df_queimadas = pd.read_excel("dataset/QUEIMADAS_2019_2022.xlsx")
-    df_queimadas['Data'] = pd.to_datetime(df_queimadas['Data'], format='%Y') # transformar as datas em datetime
-    df_queimadas.set_index('Data', inplace=True) # definir a coluna de tempo como index do DataFrame
-    df_queimadas['Número de Focos'] = int(1)
-    df_queimadas = df_queimadas[df_queimadas["Bairro - Cidade"].astype(str).str.strip() != "SD"] # dropando os dados "SD: sem definição"
-    df_queimadas['cidade'] = df_queimadas['Bairro - Cidade'].str.split(' - ').str[1].str.strip() # Extraindo infos de Itajubá
-    df_queimadas = df_queimadas[df_queimadas['cidade'] == 'Itajubá'].drop(columns=['cidade']) 
-    df_queimadas['Bairro - Cidade'] = df_queimadas['Bairro - Cidade'].str.split('-').str[0] # Selecionando os nomes dos bairros
-    df_queimadas = df_queimadas[["Bairro - Cidade", "Número de Focos"]] # Filtrando as colunas dos Bairros
-    df_queimadas = df_queimadas.rename(columns={'Bairro - Cidade': 'Bairro'}) # Renomenando a coluna para Bairro
-    return anos, df_queimadas, lim_itajuba, df_2019_2022
+    # Converter para datetime
+    df_queimadas['Data'] = pd.to_datetime(df_queimadas['Data'], errors='coerce')
+    # Usar Data como índice (DatetimeIndex)
+    df_queimadas.set_index('Data', inplace=True)
+    # Criar coluna de contagem
+    df_queimadas['Número de Focos'] = 1
+    # Garantir que Latitude e Longitude sejam numéricos e remover linhas inválidas
+    df_queimadas['Latitude'] = pd.to_numeric(df_queimadas['Latitude'], errors='coerce')
+    df_queimadas['Longitude'] = pd.to_numeric(df_queimadas['Longitude'], errors='coerce')
+    df_queimadas = df_queimadas.dropna(subset=['Latitude', 'Longitude'])
+    df_queimadas['Bairro'] = df_queimadas['Bairro'].str.strip()
+    return anos, df_queimadas, lim_itajuba
+anos, df_queimadas, lim_itajuba = load_data()
 
-anos, df_queimadas, lim_itajuba, df_2019_2022 = load_data()
-
-#Cálculo do acumulado total de queimadas por bairro
-def calcular_focos_total(df_queimadas):
-    df_total_bairros = df_queimadas.groupby('Bairro', as_index=False)['Número de Focos'].sum() #Soma dos focos por bairros
-    df_total_bairros['Ano'] = 'Total'  # Indica que é o total do período analisado
-    return df_total_bairros
-
-# Processamento dos dados (inserindo o valor 0 nos meses sem registros de QUEIMADAS)
-def calcular_focos_mensal(df_queimadas):
-    df_queimadas["Mês/Ano"] = df_queimadas.index.to_period("M")  # Criando coluna Mês/Ano
-    df_grouped = df_queimadas.groupby(["Mês/Ano", "Bairro"])["Número de Focos"].sum().reset_index()
-    meses = pd.period_range(df_queimadas.index.min(), df_queimadas.index.max(), freq="M")  # Lista dos meses do início ao fim (resolução mensal)
-    bairros = sorted(df_queimadas["Bairro"].unique()) # Lista de bairros únicos
-    df_completo = pd.MultiIndex.from_product([meses, bairros], names=["Mês/Ano", "Bairro"]).to_frame(index=False) # Agrupando os meses e bairros em um df 
-    df_final = df_completo.merge(df_grouped, on=["Mês/Ano", "Bairro"], how="left").fillna(0)  # Preenchendo os meses sem registros com 0
-    df_final["Mês/Ano"] = df_final["Mês/Ano"].astype(str)  # Converter para string para facilitar o plot
-    df_final["Número de Focos"] = df_final["Número de Focos"].astype(int)  # Garantir tipo inteiro para gráfico
-    return df_final
 
 # Função para calcular focos anuais por bairro
 def calcular_focos_anual(df_queimadas):
@@ -66,6 +48,7 @@ def calcular_focos_anual(df_queimadas):
     list_bairros = sorted(df_queimadas["Bairro"].unique()) # Ordenar bairros alfabeticamente
     list_anos = sorted(df_ano["Ano"].unique())  # Ordenar anos
     return df_ano, list_bairros, list_anos
+df_ano, list_bairros, list_anos = calcular_focos_anual(df_queimadas)
 
 # Função para calcular o acumulado total de focos de queimadas em Itajubá
 def calcular_sazonalidade_focos(df_queimadas):
@@ -90,259 +73,365 @@ def calcular_sazonalidade_focos(df_queimadas):
     df_mensal_total = df_mensal_total.sort_values("Mês")
     return df_mensal_anual, df_mensal_total
 
-#Processando os dados
-df_total_bairros = calcular_focos_total(df_queimadas)
-df_grouped = calcular_focos_mensal(df_queimadas)
-df_ano, list_bairros, list_anos = calcular_focos_anual(df_queimadas)
-df_mensal_anual, df_mensal_total= calcular_sazonalidade_focos(df_queimadas)
+df_mensal_anual, df_mensal_total = calcular_sazonalidade_focos(df_queimadas)
 
-#configurações da sidebar
-with st.sidebar:
-    st.subheader("Configurações") 
 
-# Função para plotagem do gráficos
-tab1, tab2, tab3 = st.tabs(["📃Início", "📊Gráficos", "🗺️Mapa"])
+# Gráfico acumulado por mês e ano
+df_queimadas['Ano'] = df_queimadas.index.year
+df_queimadas['Mês'] = df_queimadas.index.month
+df_mes_ano = df_queimadas.groupby(['Ano', 'Mês'])['Número de Focos'].sum().reset_index()
+df_mes_ano['Mês/Ano'] = df_mes_ano['Ano'].astype(str) + '-' + df_mes_ano['Mês'].astype(str).str.zfill(2)
+df_mes_ano = df_mes_ano.sort_values(['Ano', 'Mês'])
 
-with tab1:
-    def introducao():
-        st.subheader('Caracterização das Queimadas no Município de Itajubá, MG')
-        with st.expander("Informações:", expanded=True):
-            horizontal_bar = "<hr style='margin-top: 0; margin-bottom: 0; height: 1px; border: 1px solid #ff9793;'><br>"    
-            st.markdown(
-                """
-                - Os resultados deste dashboard podem ser observados no artigo:  
-                [__Caracterização das Queimadas no Município de Itajubá, MG__](https://periodicos.ufpe.br/revistas/index.php/rbgfe/article/view/262758), publicado na *Revista Brasileira de Geografia Física* em 2025.
-                
-                - Os dados de focos de queimadas em Itajubá-MG são provenientes do **Corpo de Bombeiros de Itajubá**  
-                e referem-se ao período entre **2019 e 2022**.
-                """
-            )
 
-            st.markdown(horizontal_bar, True)
-            
-            st.markdown(""" 
-            Podem ser observados:
-            1. Acumulado anual e total de focos de queimadas por bairro.
-            2. Distribuição mensal de focos de queimadas por bairro.
-            3. Acumulado mensal e total de focos de queimadas em Itajubá.
-            4. Distribuição espacial total dos focos de queimadas em Itajubá.
-                        """)
-            st.markdown(horizontal_bar, True)
-                        
-    if __name__ == "__main__":
-        introducao()
+fig_mes_ano = px.bar(
+    df_mes_ano,
+    x='Mês/Ano',
+    y='Número de Focos',
+    title='Acumulado de Queimadas por Mês/Ano',
+    color_discrete_sequence=['red']
+)
 
-with tab2:
-    def plot_graficos():     
-        #Gráfico do total de queimadas por bairro durante o período
-        num_bairros = st.sidebar.slider("Escolha o número de bairros", min_value=10, max_value=60, value=20)
-        df_top_bairros = df_total_bairros.sort_values(by="Número de Focos", ascending=True).reset_index(drop=True)[-num_bairros:] #Escolhendo ps n bairros com maiores focos
-        fig_01 = px.bar(df_top_bairros,
-                        x="Número de Focos",
-                        y="Bairro", 
-                        orientation="h",
-                        title=f"Acumulado de focos de queimadas por bairro: {list_anos[0]} - {list_anos[-1]}",
-                        width=1200,
-                        height=600
-        )
+fig_mes_ano.update_layout(hoverlabel=dict(font_size=12, font_color="white"))
 
-        fig_01.update_traces(hovertemplate="<br>".join(["Número de Focos: %{x}","Bairro: %{y}"]),
-                            textfont_size=14,
-                            textangle=0,
-                            textposition="outside",
-                            cliponaxis=False,
-                            marker_color='#FF0000',
-                            marker_line_color='#FF0000',
-                            marker_line_width=1.5,
-                            opacity=0.6
-        )
 
-        #Gráfico do total de queimadas por bairro durante o período
-        # Criar filtro no sidebar
-        ano_selecionado = st.sidebar.selectbox("📆 Selecione o ano", list_anos)
-        bairro_selecionado = st.sidebar.selectbox("🏡 Selecione um bairro", list_bairros)
+# Gráfico de distribuição anual e total de focos de queimadas em Itajubá
+fig_saz = go.Figure()
 
-        # Filtrar os dados para o ano selecionado
-        df_anual_filtrado = df_ano[df_ano["Ano"] == ano_selecionado]
-        df_anual_filtrado = df_anual_filtrado.sort_values(by="Número de Focos", ascending=True).reset_index(drop=True)[-num_bairros:] #Escolhendo ps n bairros com maiores focos
+# Adicionando o gráfico de barras (total de cada mês)
+fig_saz.add_trace(go.Bar(
+    x=df_mensal_total["Mês"],
+    y=df_mensal_total["Número de Focos"],
+    name="Total",
+    marker_color="#FF0000"
+))
 
-        # Criar gráfico de barras anual
-        fig_02= px.bar(df_anual_filtrado,
-                    x="Número de Focos",
-                    y="Bairro", 
-                    orientation="h",
-                    title=f"Acumulado de focos de queimadas por bairro em {ano_selecionado}",
-                    width=1200,
-                    height=600
-                    )
-
-        fig_02.update_traces(hovertemplate="<br>".join(["Número de Focos: %{x}","Bairro: %{y}"]),
-                            textfont_size=14,
-                            textangle=0,
-                            textposition="outside",
-                            cliponaxis=False,marker_color='#FF0000',
-                            marker_line_color='#FF0000',
-                            marker_line_width=1.5,
-                            opacity=0.6
-                            )
-        
-        # Gráfico do número de queimadas por bairro/mês
-        # Filtrar os dados para o bairro selecionado
-        df_filtrado = df_grouped[df_grouped["Bairro"] == bairro_selecionado]
-
-        # Gráfico de barras
-        fig_03 = px.bar(
-            df_filtrado, 
-            x="Mês/Ano", 
-            y="Número de Focos",
-            title=f"Distribuição Mensal dos Focos de Queimadas no Bairro {bairro_selecionado}",
-            hover_data={"Mês/Ano": True, "Número de Focos": True},
-            width=1200, 
-            height=400   
-    )
-        
-        # Personalizando o texto do pop-up
-        fig_03.update_traces(hovertemplate="<br>".join(["Mês/Ano: %{x}","Número de Focos: %{y}"]),
-                            textfont_size=14,
-                            textangle=0,
-                            textposition="outside",
-                            cliponaxis=False,
-                            marker_color='#FF0000',
-                            marker_line_color='#FF0000',
-                            marker_line_width=1.5,
-                            opacity=0.6
-        )  
-
-        # Gráfico de distribuição anual e total de focos de queimadas em Itajubá
-        fig_04 = go.Figure()
-
-        # Adicionando o gráfico de barras (total de cada mês)
-        fig_04.add_trace(go.Bar(
-            x=df_mensal_total["Mês"],
-            y=df_mensal_total["Número de Focos"],
-            name="Total",
-            marker_color="rgb(250, 76, 76)"
+lista_cores = ["#FFFF00", "#1ce001", "#1E90FF", "#FFFFFF", "#FF00FF", "#FF8C00"]
+for i, ano in enumerate(df_mensal_anual["Ano"].unique()):
+    df_total_ano = df_mensal_anual[df_mensal_anual['Ano'] == ano]
+    fig_saz.add_trace(go.Scatter(
+        x=df_total_ano['Mês'],
+        y=df_total_ano['Número de Focos'],
+        mode='lines+markers',
+        name=str(ano),
+        line=dict(color=lista_cores[i], width=2)
         ))
+    
+# Ajuste de layout
+fig_saz.update_layout(
+    title='Focos de Queimadas por Mês - Comparativo Anual',
+    xaxis=dict(title='Mês', tickmode='linear'),
+    yaxis_title='Número de Focos',
+    hovermode='x unified',
+    legend_title='Legenda',
+    barmode='overlay',
+    hoverlabel=dict(font_size=12, font_color="white")
+    )
 
-        lista_cores = ["#FFFF00", "#1ce001", "#1E90FF", "#FFFFFF"]
-        for i, ano in enumerate(df_mensal_anual["Ano"].unique()):
-            df_total_ano = df_mensal_anual[df_mensal_anual['Ano'] == ano]
-            fig_04.add_trace(go.Scatter(
-                x=df_total_ano['Mês'],
-                y=df_total_ano['Número de Focos'],
-                mode='lines+markers',
-                name=str(ano),
-                line=dict(color=lista_cores[i], width=2)
-                ))
-            
-        # Ajuste de layout
-        fig_04.update_layout(
-            title='Focos de Queimadas por Mês - Comparativo Anual',
-            xaxis=dict(title='Mês', tickmode='linear'),
-            yaxis_title='Número de Focos',
-            hovermode='x unified',
-            legend_title='Legenda',
-            barmode='overlay')
+#Cálculo do acumulado total de queimadas por bairro
+def calcular_focos_total(df_queimadas):
+    df_total_bairros = df_queimadas.groupby('Bairro', as_index=False)['Número de Focos'].sum() #Soma dos focos por bairros
+    df_total_bairros['Ano'] = 'Total'  # Indica que é o total do período analisado
+    return df_total_bairros
+df_total_bairros = calcular_focos_total(df_queimadas)
 
-        # Exibindo os gráficos 01 e 02 lado a lado
-        st.subheader("Distribuição Anual dos Focos de Queimadas por Bairro")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.plotly_chart(fig_01, use_container_width=True)
-        with col2:
-            st.plotly_chart(fig_02, use_container_width=True)
-        #Exibindo o gráfico 03
-        st.subheader("Distribuição Mensal dos Focos de Queimadas por Bairro")
-        st.plotly_chart(fig_03, use_container_width=True)
-        #Exibindo o gráfico 04
-        st.subheader("Distribuição Anual dos Focos de Queimadas em Itajubá-MG")
-        st.plotly_chart(fig_04, use_container_width=True)
+# Novo seletor de número de bairros (substituindo o slider)
 
-    # Exibindo os gráficos no Streamlit
-    if __name__ == "__main__":
-        plot_graficos()
 
-with tab3:
-    # Plotagem do MAPA
-    def plot_mapa():
 
-        # Criando o mapa utilizando o Folium
-        map = folium.Map(location=[ -22.44, -45.40], zoom_start=11.0)
+# Gráfico acumulado por Natureza
+if 'Natureza' in df_queimadas.columns:
+    df_natureza = df_queimadas.groupby('Natureza')['Número de Focos'].sum().reset_index()
+    df_natureza = df_natureza.sort_values(by='Número de Focos', ascending=True)
+    fig_natureza = px.bar(
+        df_natureza,
+        x='Número de Focos',
+        y='Natureza',
+        title='Acumulado de Queimadas por Natureza',
+        color_discrete_sequence=['red'],
+        width=1200,
+        height=600
+)
 
-        # Convertendo o contorno do município para o formato GeoJSON
-        lim_itajuba_geojson = lim_itajuba.__geo_interface__
-        folium.GeoJson(lim_itajuba_geojson, name="Limites de Itajubá/MG", style_function=lambda x: {'color': 'black', 'weight': 2, 'fillOpacity': 0}).add_to(map)
+# Plotagem do MAPA
+def plot_mapa(ano_selecionado="TOTAL"):
+    # Filtrar dados conforme o ano selecionado
+    if ano_selecionado == "TOTAL":
+        df_filtrado = df_queimadas
+    else:
+        df_filtrado = df_queimadas[df_queimadas.index.year == ano_selecionado]
 
-        # Criando o HeatMap para plotagem
-        heat_data = df_2019_2022[['latitude', 'longitude']].values.tolist()
+    # Criando o mapa utilizando o Folium
+    map = folium.Map(location=[-22.44, -45.40], zoom_start=11.0)
 
-        # Adicionando o HeatMap no mapa
-        HeatMap(heat_data, radius=10, name="Mapa de Calor", blur=10).add_to(map)
+    # Convertendo o contorno do município para o formato GeoJSON
+    lim_itajuba_geojson = lim_itajuba.__geo_interface__
+    folium.GeoJson(lim_itajuba_geojson, name="Limites de Itajubá/MG", style_function=lambda x: {'color': 'black', 'weight': 2, 'fillOpacity': 0}).add_to(map)
 
-        folium.TileLayer(
-            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            attr='Esri',
-            name='Esri Satellite',
-            overlay=False,
-            control=True
-        ).add_to(map)
+    # Criando o HeatMap para plotagem com dados filtrados
+    heat_data = df_filtrado[['Latitude', 'Longitude']].values.tolist()
 
-        # Adicionando marcadores
-        marker_group = folium.FeatureGroup(name="Focos de Queimadas")
+    # Adicionando o HeatMap no mapa
+    HeatMap(heat_data, radius=10, name="Mapa de Calor", blur=10).add_to(map)
 
-        for idx, row in df_2019_2022.iterrows():
-            popup_text = f"""
-            <b>Endereço:</b> {row['Endereço']}<br>
-            <b>Data:</b> {row.get('Data', 'Sem Data')}<br>   
-            <b>lat:</b> {row['latitude']}<br>
-            <b>lon:</b> {row['longitude']}        
-            """
-            
-            folium.Marker(
-                location=[row['latitude'], row['longitude']],
-                popup=folium.Popup(popup_text, max_width=300),
-                icon=folium.Icon(color="red", icon="fire", icon_color="white")
-            ).add_to(marker_group)
+    folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr='Esri',
+        name='Esri Satellite',
+        overlay=False,
+        control=True
+    ).add_to(map)
 
-        # Adicionando o grupo de marcadores no mapa
-        marker_group.add_to(map)
+    # Adicionando marcadores
+    marker_group = folium.FeatureGroup(name="Focos de Queimadas")
 
-        # Adicionando o Layer Control
-        folium.LayerControl(position="topright").add_to(map)
+    for idx, row in df_filtrado.iterrows():
+        popup_text = f"""
+        <b>Endereço:</b> {row['Rua/Avenida/Rodovia']}<br>
+        <b>Data:</b> {idx.strftime('%d/%m/%Y')}<br>
+        <b>lat:</b> {row['Latitude']}<br>
+        <b>lon:</b> {row['Longitude']}
+        """
         
-        # Adicionando a opção de tela cheia
-        Fullscreen().add_to(map)
+        folium.Marker(
+            location=[row['Latitude'], row['Longitude']],
+            popup=folium.Popup(popup_text, max_width=300),
+            icon=folium.Icon(color="red", icon="fire", icon_color="white")
+        ).add_to(marker_group)
 
-        # Exibindo o mapa no Streamlit
-        st.subheader("Mapa de Calor dos Focos de Queimadas em Itajubá/MG - 2019-2022")
+    # Adicionando o grupo de marcadores no mapa
+    marker_group.add_to(map)
 
-        folium_static(map, width=850, height=400)
+    # Adicionando o Layer Control
+    folium.LayerControl(position="topright").add_to(map)
+    
+    # Adicionando a opção de tela cheia
+    Fullscreen().add_to(map)
+    return map
 
-    # Exibindo o mapa no Streamlit
-    if __name__ == "__main__":
-        plot_mapa()
+# Exibindo o mapa no Streamlit
+if __name__ == "__main__":
+    plot_mapa()
 
-#configurações da sidebar
+# CSS customizado para mudar cor e borda do st.metric
+st.markdown(
+    """
+    <style>
+    /* Caixa do st.metric */
+    div[data-testid="stMetric"] {
+        background-color: #5f705e; /* fundo customizado */
+        padding: 15px;
+        border-radius: 15px;
+        border: 2px solid transparent;
+        border-image: linear-gradient(45deg, #34322f, #76716b) 1; /* borda em gradiente */
+        color: white; /* cor do texto */
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.4); /* sombra */
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    /* Efeito hover */
+    div[data-testid="stMetric"]:hover {
+        transform: scale(1.03); /* cresce um pouquinho */
+        box-shadow: 0px 6px 18px rgba(0,0,0,0.6);
+    }
+
+    /* Valor principal */
+    div[data-testid="stMetricValue"] {
+        color: #FFFFFF; /* branco */
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    /* Label */
+    div[data-testid="stMetricLabel"] {
+        color: #DDDDDD; 
+        font-size: 16px;
+    }
+
+    /* Delta */
+    div[data-testid="stMetricDelta"] {
+        color: #00FF00 !important; /* verde claro */
+        font-weight: bold; svg {
+        display: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# Criando interface para visualização do APP
+horizontal_bar = "<hr style='margin-top: 0; margin-bottom: 0; height: 1px; border: 1px solid #FF9100DA;'><br>"    
+# Inicializar session_state para controlar a página ativa
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = None
+
+# Sidebar com botões
 with st.sidebar:
+    selected = option_menu(
+        menu_title="Navegação",
+        options=["Início", "Variação sazonal", "Bairros e Natureza", "Mapa"],
+        icons=["house", "bar-chart", "geo-alt", "map"],
+        menu_icon="cast",
+        default_index=0,
+    )
+
+# Mostrar conteúdo dependendo da aba
+if selected == "Início":
+    # Título principal
+    st.subheader("🔥 Monitoramento de Queimadas em Itajubá/MG")
+
+        # Mensagem de introdução com fonte menor (só aparece no Início)
+    st.markdown(
+        """
+        <p style="font-size:15px;">
+        Este aplicativo apresenta uma análise interativa sobre os focos de queimadas em <b>Itajubá/MG</b> entre 2019 e 2024.<br>
+        Você pode navegar entre as seções usando os botões ao lado esquerdo da tela:
+        </p>
+        <ul style="font-size:15px;">
+        <li>📈 <b>Variação sazonal</b>: mostra como as queimadas variam ao longo dos meses e anos.</li>
+        <li>📍 <b>Bairros e natureza</b>: distribuição dos focos por bairros e pela natureza do evento.</li>
+        <li>🗺️ <b>Mapa</b>: exibe um mapa interativo com os focos de queimadas, incluindo mapa de calor e marcadores.</li>
+        </ul>
+        """,
+        unsafe_allow_html=True
+    )
     st.markdown("---")
 
     st.markdown(
         """
-        <style>
-        .custom-text {
-            color: #ffffff;
-            font-size: 14px;
-        }
-        </style>
+        <p style="font-size:15px;">
+            Maiores ocorrências:
+        </p>
         """,
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        '<h6 class="custom-text">Desenvolvido por <a href="https://www.linkedin.com/in/geovanecarlos" target="_blank" style="color: #ffffff;"> Geovane Carlos</a></h6>',
-        unsafe_allow_html=True
+    # --- Indicadores principais ---
+    col1, col2, col3, col4 = st.columns(4)
+
+    # 1. Bairro com mais queimadas
+    bairro_top = df_total_bairros.loc[df_total_bairros["Número de Focos"].idxmax()]
+    col1.metric(
+        label="🏘️ Bairro",
+        value=bairro_top["Bairro"],
+        delta=f"{bairro_top['Número de Focos']} focos",
+        label_visibility="visible",
+        border=True
     )
 
-    social_media_links = ["https://www.linkedin.com/in/geovanecarlos", "https://github.com/geovanecarlos"]
-    social_media_icons = SocialMediaIcons(social_media_links)
-    social_media_icons.render()
+    # 2. Natureza com mais queimadas (se existir a coluna)
+    if "Natureza" in df_queimadas.columns:
+        natureza_top = df_queimadas.groupby("Natureza")["Número de Focos"].sum().idxmax()
+        natureza_val = df_queimadas.groupby("Natureza")["Número de Focos"].sum().max()
+        col2.metric(
+            label="🏙️ Natureza",
+            value=natureza_top,
+            delta=f"{natureza_val} focos", 
+            label_visibility="visible",
+            border=True
+        )
+    else:
+        col2.metric("🏙️ Natureza", "Dados indisponíveis")
+
+    # 3. Mês com mais ocorrências (histórico)
+    mes_top = df_mensal_total.loc[df_mensal_total['Número de Focos'].idxmax(), 'Mês']
+    total_mes_top = df_mensal_total.loc[df_mensal_total['Número de Focos'].idxmax(), 'Número de Focos']
+
+    col3.metric(
+        label="📅 Mês",
+        value=mes_top.capitalize(),
+        delta=f"{total_mes_top} focos",
+        label_visibility="visible",
+        border=True
+    )
+
+    # 4. Ano com mais queimadas
+    ano_top = df_queimadas.groupby("Ano")["Número de Focos"].sum().idxmax()
+    ano_val = df_queimadas.groupby("Ano")["Número de Focos"].sum().max()
+    col4.metric(
+        label="📆 Ano",
+        value=str(ano_top),
+        delta=f"{ano_val} focos",
+        label_visibility="visible",
+        border=True
+    )
+
+    st.markdown("---")
+
+
+# Atualizar session_state com base no botão clicado
+if selected == "Variação sazonal":
+    st.subheader("Distribuição Mensal dos Focos de Queimadas")
+    st.plotly_chart(fig_mes_ano, use_container_width=True)
+    st.plotly_chart(fig_saz, use_container_width=True)
+    st.markdown(horizontal_bar, True)
+
+if selected == "Bairros e Natureza":
+    st.subheader("Distribuição Anual dos Focos de Queimadas por Bairro e Natureza")
+
+    # Usando colunas para controlar a largura
+    col1, col2, col3 = st.columns([1.2, 2, 1])
+    
+    with col1:  # Coluna do meio (3x mais larga que as laterais)
+    # Seletor de número de bairros
+        num_bairros = st.selectbox(
+            "Selecione o número de bairros a exibir:",
+            options=[10, 20, 30, 40, 50],
+            index=0,
+            key="num_bairros_selector"
+        )
+    
+    # Criar gráfico de bairros dinamicamente
+    if 'Bairro' in df_queimadas.columns:
+        df_top_bairros = df_total_bairros.sort_values(by="Número de Focos", ascending=True).tail(num_bairros)
+        
+        fig_bairro = px.bar(
+            df_top_bairros,
+            x="Número de Focos",
+            y="Bairro", 
+            orientation="h",
+            title=f"Top {num_bairros} Bairros com Maior Número de Focos ({list_anos[0]}-{list_anos[-1]})",
+            color_discrete_sequence=['red'],
+            width=1200,
+            height=600
+        )
+        
+        fig_bairro.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            hoverlabel=dict(font_size=12, font_color="white")
+        )
+        
+        st.plotly_chart(fig_bairro, use_container_width=True)
+    
+    st.plotly_chart(fig_natureza, use_container_width=True)
+    st.markdown(horizontal_bar, True)
+
+
+if selected == "Mapa":
+
+    st.subheader("Mapa de Calor dos Focos de Queimadas em Itajubá/MG")
+    
+    # Caixa de seleção para anos - com layout ajustado
+    opcoes_ano = ["TOTAL"] + sorted(df_queimadas.index.year.unique())
+    
+    # Usando colunas para controlar a largura
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:  # Coluna do meio (3x mais larga que as laterais)
+        ano_selecionado = st.selectbox(
+            "Selecione o ano para visualizar:",
+            options=opcoes_ano,
+            index=0,  # "TOTAL" como padrão
+            key="ano_selector"
+        )
+    
+    # Exibir título com ano selecionado
+    if ano_selecionado == "TOTAL":
+        st.markdown(f"**Período completo: 2019-2024**")
+    else:
+        st.markdown(f"**Ano selecionado: {ano_selecionado}**")
+    
+    # Plotar mapa com filtro de ano
+    mapa = plot_mapa(ano_selecionado)  
+    folium_static(mapa, width=800, height=500)
+    st.markdown(horizontal_bar, True)
