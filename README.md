@@ -37,7 +37,7 @@
 <hr>
 
 <div align="center">
-  <img src="https://github.com/geovanecarlos/app_queimadas_v2/blob/main/dataset/fig_mapa_queimadas.png" 
+  <img src="https://github.com/geovanecarlos/app_queimadas_v2/blob/main/mapa%20do%20foco%20de%20queimadas.png" 
        alt="Mapa de Focos de Queimadas"/>
 </div>
 
