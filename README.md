@@ -15,7 +15,7 @@
 
 <p>
   Os dados de focos de queimadas em Itajubá-MG são provenientes do Corpo de Bombeiros de Itajubá e  
-  referem-se ao período entre 2019 e 2022.  
+  referem-se ao período entre 2019 e 2024.  
 </p>
 
   <p>
